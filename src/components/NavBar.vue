@@ -7,11 +7,11 @@ import { ArrowRightStartOnRectangleIcon } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthorizationStore()
 
 async function logoutUser() {
   await logout()
 
-  const auth = useAuthorizationStore()
   auth.$reset()
 
   router.push({ name: 'Login' })
@@ -34,7 +34,7 @@ watch(
 <template>
   <nav class="navbar navbar-expand-lg bg-white shadow-sm position-sticky top-0 z-1">
     <div class="container-fluid py-3 px-5">
-      <h1 class="navbar-brand mb-0">Task Management</h1>
+      <h1 class="navbar-brand mb-0">Shopping App</h1>
       <button
         class="navbar-toggler"
         type="button"
@@ -52,6 +52,11 @@ watch(
         <ul class="navbar-nav">
           <li class="nav-item">
             <router-link class="nav-link" to="/home">Home</router-link>
+          </li>
+          <li class="nav-item">
+            <router-link class="nav-link" to="/my-products" :hidden="auth.role === 'BUYER'">
+              My Products
+            </router-link>
           </li>
         </ul>
 
