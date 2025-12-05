@@ -22,7 +22,6 @@ async function handleLogin() {
   }
 
   const auth = useAuthorizationStore()
-  auth.setToken(response.token)
   auth.setUserDetails(response)
 
   router.push({ name: 'Home' })
@@ -45,6 +44,7 @@ async function handleLogin() {
             id="username"
             placeholder="Enter username"
             v-model="credentials.username"
+            required
           />
         </div>
         <div class="mb-3">
@@ -55,6 +55,7 @@ async function handleLogin() {
             id="password"
             placeholder="Enter Password"
             v-model="credentials.password"
+            required
           />
         </div>
         <div class="mb-3 text-danger" v-if="errorMessage">{{ errorMessage }}</div>
