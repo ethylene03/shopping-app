@@ -22,7 +22,6 @@ router.beforeEach(async (to, from, next) => {
 
     if (!newToken && to.name !== 'Login' && to.name !== 'Signup') next({ name: 'Login' })
     else if (newToken) {
-      auth.setToken(newToken.token)
       auth.setUserDetails(newToken)
     }
   }
@@ -33,6 +32,11 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.name === 'Login' && auth.isLoggedIn()) {
+    next({ name: 'Home' })
+    return
+  }
+
+  if (to.meta.role && auth.role !== to.meta.role) {
     next({ name: 'Home' })
     return
   }
