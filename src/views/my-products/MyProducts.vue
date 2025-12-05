@@ -44,7 +44,9 @@ function addProduct(product: Product) {
     <h1>My Products</h1>
     <p class="lead">Manage your products here.</p>
 
-    <div class="d-flex flex-column flex-md-row gap-3 justify-content-between w-100 my-4 mt-0 mt-md-3">
+    <div
+      class="d-flex flex-column flex-md-row gap-3 justify-content-between w-100 my-4 mt-0 mt-md-3"
+    >
       <button class="btn btn-primary" @click="showAddProduct">Add New Product</button>
       <AddProduct @product="addProduct" />
 
@@ -62,7 +64,7 @@ function addProduct(product: Product) {
       </div>
     </div>
 
-    <div class="card p-5 w-100" style="max-height: 500px; overflow-y: auto;">
+    <div class="card p-5 w-100" style="max-height: 500px; overflow-y: auto">
       <NoData v-if="products.length === 0" message="You have no products listed." />
       <div v-else class="d-flex gap-3 flex-wrap">
         <template v-for="product in products" :key="product.id">

@@ -64,7 +64,9 @@ async function updateProduct(product: Product): Promise<Product | ApiError> {
 
 async function addQuantity(productId: string, amount: number): Promise<Product | ApiError> {
   try {
-    const response = await fetchApi(PUT(`/products/${productId}/quantity`, { quantity: amount } as Product))
+    const response = await fetchApi(
+      PUT(`/products/${productId}/quantity`, { quantity: amount } as Product),
+    )
     const data = await response.json()
 
     if (!response.ok) return { error: data.error } as ApiError
@@ -91,4 +93,3 @@ async function deleteProduct(id: string): Promise<void | ApiError> {
 }
 
 export { addQuantity, createProduct, deleteProduct, getProduct, getProducts, updateProduct }
-

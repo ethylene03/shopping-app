@@ -2,7 +2,7 @@
 import type { Product } from '@/models/products'
 import { Modal } from 'bootstrap'
 import ViewProduct from './ViewProduct.vue'
-import { ref } from 'vue';
+import { ref } from 'vue'
 
 const { product, isEditable } = defineProps<{ product: Product; isEditable: boolean }>()
 const localProduct = ref<Product>(product)
