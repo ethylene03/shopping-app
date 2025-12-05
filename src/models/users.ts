@@ -1,8 +1,14 @@
+import type { Cart } from './carts'
+import type { Order } from './orders'
+
 export interface UserToken {
   id: string
   name: string
   username: string
+  role: 'BUYER' | 'SELLER'
   token: string
+  cart: Cart
+  orders: Order[]
 }
 
 export type User = Omit<UserToken, 'token'>
@@ -18,6 +24,7 @@ export interface UserCredentials {
   name?: string
   username: string
   password: string
+  role?: 'BUYER' | 'SELLER'
 }
 
 export interface UserList {
