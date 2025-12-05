@@ -1,9 +1,12 @@
 import { useAuthorizationStore } from '@/stores/authorization'
 import { refreshToken } from './authorization'
 import type { User } from '@/models/users'
+import type { Product } from '@/models/products'
+import type { Order, OrderItem } from '@/models/orders'
+import type { Cart, CartItem } from '@/models/carts'
 
 const baseUrl = import.meta.env.VITE_API_URL
-type DataType = User
+type DataType = User | Product | Order | OrderItem | Cart | CartItem | { status: string }
 
 function getHeaders() {
   const auth = useAuthorizationStore()
@@ -55,7 +58,6 @@ async function fetchApi(request: Request): Promise<Response> {
     const newToken = await refreshToken()
 
     if (newToken) {
-      auth.setToken(newToken.token)
       auth.setUserDetails(newToken)
 
       request.headers.set('Authorization', `Bearer ${newToken.token}`)
