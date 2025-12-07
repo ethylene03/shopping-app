@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getProducts } from '@/api/products'
+import NoData from '@/components/NoData.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import { isError } from '@/helpers/utils'
 import type { Product } from '@/models/products'
@@ -31,27 +32,22 @@ async function fetchProducts() {
   <section id="my-products" class="section">
     <h1>Welcome, {{ auth.name }}</h1>
     <p class="lead">Browse products here.</p>
-
-    <div
-      class="d-flex flex-column flex-md-row gap-3 justify-content-md-end w-100 my-4 mt-0 mt-md-3"
-    >
-      <div class="input-group w-25 border border-dark rounded-3 bg-white" style="min-width: 20rem">
-        <input
-          type="text"
-          class="form-control rounded-3 border-0"
-          placeholder="Search products..."
-          aria-label="Search products"
-          aria-describedby="button-search"
-        />
-        <button class="btn" type="button" id="button-search">
-          <MagnifyingGlassIcon class="text-dark" style="height: 1.25rem; width: 1.25rem" />
-        </button>
-      </div>
+    <div class="input-group col-12 col-md-3 border border-dark rounded-3 bg-white my-4">
+      <input
+        type="text"
+        class="form-control rounded-3 border-0"
+        placeholder="Search products..."
+        aria-label="Search products"
+        aria-describedby="button-search"
+      />
+      <button class="btn" type="button" id="button-search">
+        <MagnifyingGlassIcon class="text-dark" style="height: 1.25rem; width: 1.25rem" />
+      </button>
     </div>
 
-    <div class="w-100">
+    <div class="w-100" :class="{ 'card p-3': products.length === 0 }">
       <NoData v-if="products.length === 0" message="You have no products listed." />
-      <div v-else class="d-flex gap-3 flex-wrap">
+      <div v-else class="home--products-container flex-md-row">
         <template v-for="product in products" :key="product.id">
           <ProductCard :product="product" :is-editable="false" />
         </template>
@@ -59,3 +55,24 @@ async function fetchProducts() {
     </div>
   </section>
 </template>
+
+<style scoped>
+.input-group {
+  width: auto;
+  min-width: 20rem;
+  align-self: center;
+}
+
+.home--products-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.5rem;
+}
+
+@media screen and (min-width: 768px) {
+  .input-group {
+    align-self: flex-end;
+  }
+}
+</style>

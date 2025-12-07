@@ -45,7 +45,7 @@ function addProduct(product: Product) {
     <p class="lead">Manage your products here.</p>
 
     <div
-      class="d-flex flex-column flex-md-row gap-3 justify-content-between w-100 my-4 mt-0 mt-md-3"
+      class="my-products--actions flex-md-row mt-md-3"
     >
       <button class="btn btn-primary" @click="showAddProduct">Add New Product</button>
       <AddProduct @product="addProduct" />
@@ -78,5 +78,15 @@ function addProduct(product: Product) {
 <style scoped>
 .input-group .form-control:focus {
   box-shadow: none;
+}
+
+.my-products--actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0;
+  margin-bottom: 1.5rem;
 }
 </style>
