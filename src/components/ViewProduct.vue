@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { createCartItem } from '@/api/carts'
 import { updateProduct } from '@/api/products'
 import { isError } from '@/helpers/utils'
+import type { CartItem } from '@/models/carts'
 import type { Product } from '@/models/products'
+import { useAuthorizationStore } from '@/stores/authorization'
 import { Modal } from 'bootstrap'
 import { ref } from 'vue'
 
@@ -36,11 +39,40 @@ async function editProduct() {
   emit('product', response)
   isClicked.value = false
 
+  closeModal()
+}
+
+function closeModal() {
   const modalElement = document.getElementById('modal--product-' + product.id)
   if (modalElement) {
     const modalInstance = Modal.getInstance(modalElement)
     modalInstance?.hide()
   }
+}
+
+const itemQuantity = ref(1)
+function changeQuantity(amount: number) {
+  if (isEditable) localProduct.value.quantity += amount
+  else itemQuantity.value += amount
+}
+
+const auth = useAuthorizationStore()
+async function addToCart() {
+  const cartItem: CartItem = {
+    cartId: auth.cart.id,
+    product: localProduct.value,
+    quantity: itemQuantity.value,
+  }
+  const response = await createCartItem(cartItem)
+
+  if (isError(response)) return
+  auth.cart.products.push(response)
+  auth.cart.totalAmount += response.product.price * response.quantity
+  closeModal()
+}
+
+async function checkOutItem() {
+  // checkout product here
 }
 </script>
 
@@ -58,7 +90,7 @@ async function editProduct() {
           ></button>
         </div>
 
-        <form class="modal-body p-4" :class="{ 'mb-5': !isEditable }" @submit.prevent="editProduct">
+        <form class="modal-body p-4" @submit.prevent="editProduct">
           <div class="my-3">
             <label for="name" class="form-label">
               Product Name
@@ -116,27 +148,39 @@ async function editProduct() {
                 <button
                   type="button"
                   class="btn btn-outline-primary px-3"
-                  @click="localProduct.quantity -= 1"
-                  :hidden="!isEditable"
+                  @click="changeQuantity(-1)"
                 >
                   -
                 </button>
                 <input
                   type="number"
                   class="form-control flex-fill text-center"
-                  :class="{ 'text-danger': localProduct.quantity < 0 }"
+                  :class="{ 'text-danger': localProduct.quantity < 1 }"
                   id="name"
                   min="1"
                   v-model="localProduct.quantity"
                   required
                   style="max-width: 5rem"
-                  :readonly="!isEditable"
+                  :hidden="!isEditable"
                 />
+                <input
+                  type="number"
+                  class="form-control flex-fill text-center"
+                  :class="{
+                    'text-danger': itemQuantity < 1 || itemQuantity > localProduct.quantity,
+                  }"
+                  id="quantity"
+                  min="1"
+                  :max="localProduct.quantity"
+                  v-model="itemQuantity"
+                  style="max-width: 5rem"
+                  :hidden="isEditable"
+                />
+
                 <button
                   type="button"
                   class="btn btn-outline-primary px-3"
-                  @click="localProduct.quantity += 1"
-                  :hidden="!isEditable"
+                  @click="changeQuantity(1)"
                 >
                   +
                 </button>
@@ -146,6 +190,13 @@ async function editProduct() {
 
           <div v-if="error" class="alert alert-danger mt-3" role="alert">
             {{ error }}
+          </div>
+
+          <div class="mt-5 d-flex gap-3 justify-content-end" :hidden="isEditable">
+            <button type="button" class="btn text-primary" @click="addToCart">Add To Cart</button>
+            <button type="button" class="btn btn-primary px-5" @click="checkOutItem">
+              Buy Now
+            </button>
           </div>
 
           <div class="mt-5" :class="{ 'd-flex gap-4': isEditable }" :hidden="!isEditable">

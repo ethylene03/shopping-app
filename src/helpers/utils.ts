@@ -13,4 +13,8 @@ function debounce(fun: () => void, delay = 300): () => void {
   }
 }
 
-export { debounce, isError }
+function formatAmount(amount: number): string {
+  return amount.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })
+}
+
+export { debounce, isError, formatAmount }

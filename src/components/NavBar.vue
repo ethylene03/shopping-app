@@ -3,7 +3,7 @@ import { logout } from '@/api/authorization'
 import { useAuthorizationStore } from '@/stores/authorization'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowRightStartOnRectangleIcon } from '@heroicons/vue/24/solid'
+import { ArrowRightStartOnRectangleIcon, ShoppingBagIcon } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,6 +61,14 @@ watch(
         </ul>
 
         <ul class="navbar-nav">
+          <li class="nav-item me-5">
+            <router-link class="nav-link position-relative p-0 m-2" to="/cart">
+              <shopping-bag-icon style="height: 1.5rem; width: 1.5rem" />
+              <span class="position-absolute top-0 translate-middle badge rounded-pill bg-danger">
+                {{ auth.cart.products?.length || 0 }}
+              </span>
+            </router-link>
+          </li>
           <li class="nav-item">
             <button
               v-if="currentPath !== 'login' && currentPath !== 'signup'"
