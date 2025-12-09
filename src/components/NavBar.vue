@@ -67,12 +67,13 @@ watch(
         <ul class="navbar-nav">
           <li v-if="auth.role === 'SELLER'" class="nav-item dropdown me-3">
             <a
-              class="nav-link dropdown-toggle"
+              class="nav-link dropdown-toggle d-flex align-items-center"
               role="button"
               aria-expanded="false"
               @click="showDropdown = !showDropdown"
             >
               <BuildingStorefrontIcon style="height: 1.5rem; width: 1.5rem" />
+              <span class="d-md-none ms-3">Seller Panel</span>
             </a>
             <ul
               class="dropdown-menu"
@@ -87,7 +88,7 @@ watch(
             </ul>
           </li>
           <li class="nav-item me-5">
-            <router-link class="nav-link position-relative p-0 m-2" to="/cart">
+            <router-link class="nav-link position-relative p-0 my-2 d-flex align-items-center d-md-block" to="/cart">
               <shopping-bag-icon style="height: 1.5rem; width: 1.5rem" />
               <span
                 v-if="auth.cart.products?.length > 0"
@@ -95,6 +96,7 @@ watch(
               >
                 {{ auth.cart.products?.length }}
               </span>
+              <span class="d-md-none ms-3">Shopping Cart</span>
             </router-link>
           </li>
           <li class="nav-item">
