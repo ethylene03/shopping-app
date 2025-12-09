@@ -3,7 +3,11 @@ import { logout } from '@/api/authorization'
 import { useAuthorizationStore } from '@/stores/authorization'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowRightStartOnRectangleIcon, ShoppingBagIcon } from '@heroicons/vue/24/solid'
+import {
+  ArrowRightStartOnRectangleIcon,
+  BuildingStorefrontIcon,
+  ShoppingBagIcon,
+} from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,17 +26,19 @@ const currentPath = computed(() => {
 })
 
 const isOpen = ref<boolean>(false)
+const showDropdown = ref<boolean>(false)
 
 watch(
   () => route.path,
   () => {
     isOpen.value = false
+    showDropdown.value = false
   },
 )
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-lg bg-white shadow-sm position-sticky top-0 z-1">
+  <nav class="navbar navbar-expand-lg bg-white shadow-sm position-sticky top-0 z-3">
     <div class="container-fluid py-3 px-5">
       <h1 class="navbar-brand mb-0">Shopping App</h1>
       <button
@@ -54,18 +60,40 @@ watch(
             <router-link class="nav-link" to="/home">Home</router-link>
           </li>
           <li class="nav-item">
-            <router-link class="nav-link" to="/my-products" :hidden="auth.role === 'BUYER'">
-              My Products
-            </router-link>
+            <router-link class="nav-link" to="/orders">Order History</router-link>
           </li>
         </ul>
 
         <ul class="navbar-nav">
+          <li v-if="auth.role === 'SELLER'" class="nav-item dropdown me-3">
+            <a
+              class="nav-link dropdown-toggle"
+              role="button"
+              aria-expanded="false"
+              @click="showDropdown = !showDropdown"
+            >
+              <BuildingStorefrontIcon style="height: 1.5rem; width: 1.5rem" />
+            </a>
+            <ul
+              class="dropdown-menu"
+              :class="{ show: showDropdown, active: currentPath.startsWith('seller') }"
+            >
+              <li>
+                <router-link class="dropdown-item" to="/seller/products">My Products</router-link>
+              </li>
+              <li>
+                <router-link class="dropdown-item" to="/seller/orders">Orders</router-link>
+              </li>
+            </ul>
+          </li>
           <li class="nav-item me-5">
             <router-link class="nav-link position-relative p-0 m-2" to="/cart">
               <shopping-bag-icon style="height: 1.5rem; width: 1.5rem" />
-              <span class="position-absolute top-0 translate-middle badge rounded-pill bg-danger">
-                {{ auth.cart.products?.length || 0 }}
+              <span
+                v-if="auth.cart.products?.length > 0"
+                class="position-absolute top-0 translate-middle badge rounded-pill bg-danger"
+              >
+                {{ auth.cart.products?.length }}
               </span>
             </router-link>
           </li>
