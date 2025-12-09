@@ -12,7 +12,7 @@ import { useRouter } from 'vue-router'
 const auth = useAuthorizationStore()
 
 onMounted(() => {
-  document.title = 'Shopping Bag'
+  document.title = 'Shopping App: Cart'
   fetchCartDetails()
 })
 

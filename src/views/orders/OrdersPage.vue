@@ -8,7 +8,7 @@ import type { Order } from '@/models/orders'
 import { onMounted, ref } from 'vue'
 
 onMounted(() => {
-  document.title = 'Order History'
+  document.title = 'Shopping App: Order History'
   fetchOrders()
 })
 

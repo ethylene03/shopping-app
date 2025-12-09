@@ -11,7 +11,7 @@ import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 onMounted(() => {
-  document.title = 'Checkout'
+  document.title = 'Shopping App: Checkout'
 })
 
 const checkoutStore = useCheckoutStore()

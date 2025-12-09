@@ -14,7 +14,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 onMounted(() => {
-  document.title = 'Order Details'
+  document.title = 'Shopping App: Order Details'
   fetchOrder()
 })
 

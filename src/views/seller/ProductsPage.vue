@@ -11,7 +11,7 @@ import { Modal } from 'bootstrap'
 import { onMounted, ref, watch } from 'vue'
 
 onMounted(() => {
-  document.title = 'My Products'
+  document.title = 'Shopping App: My Products'
   fetchProducts()
   debouncedFetch.value = debounce(() => fetchProducts(), 500)
 })

@@ -10,7 +10,7 @@ import { MagnifyingGlassIcon } from '@heroicons/vue/24/solid'
 import { onMounted, ref, watch } from 'vue'
 
 onMounted(() => {
-  document.title = 'Home'
+  document.title = 'Shopping App: Home'
   fetchProducts()
   debouncedFetch.value = debounce(() => fetchProducts(), 500)
 })
