@@ -46,7 +46,7 @@ onMounted(() => {
           >
             <div
               v-if="isClicked"
-              class="spinner-border spinner-border-sm text-primary d-block mx-auto my-1"
+              class="spinner-border spinner-border-sm text-white d-block mx-auto my-1"
               role="status"
             ></div>
             <span v-else>Delete</span>

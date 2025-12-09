@@ -1,20 +1,25 @@
 <script setup lang="ts">
-import { createCartItem } from '@/api/carts'
-import { updateProduct } from '@/api/products'
+import { createCartItem, updateCartItem } from '@/api/carts'
+import { deleteProduct, updateProduct } from '@/api/products'
 import { isError } from '@/helpers/utils'
 import type { CartItem } from '@/models/carts'
 import type { Product } from '@/models/products'
 import { useAuthorizationStore } from '@/stores/authorization'
+import { useCheckoutStore } from '@/stores/checkout'
+import { TrashIcon } from '@heroicons/vue/24/solid'
 import { Modal } from 'bootstrap'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import DeleteModal from './DeleteModal.vue'
 
-const { product, isEditable } = defineProps<{ product: Product; isEditable: boolean }>()
+const { product, editable } = defineProps<{ product: Product; editable: boolean }>()
 const emit = defineEmits<{
   (e: 'product', product: Product): void
 }>()
 
 const error = ref('')
 const isClicked = ref(false)
+const isEditable = ref(editable)
 const localProduct = ref<Product>(
   product ||
     ({
@@ -50,29 +55,92 @@ function closeModal() {
   }
 }
 
-const itemQuantity = ref(1)
+const itemQuantity = ref(0)
 function changeQuantity(amount: number) {
-  if (isEditable) localProduct.value.quantity += amount
+  if (isEditable.value) localProduct.value.quantity += amount
   else itemQuantity.value += amount
 }
 
+let savedItem: CartItem | null = null
 const auth = useAuthorizationStore()
 async function addToCart() {
+  error.value = ''
   const cartItem: CartItem = {
     cartId: auth.cart.id,
     product: localProduct.value,
     quantity: itemQuantity.value,
   }
-  const response = await createCartItem(cartItem)
 
-  if (isError(response)) return
-  auth.cart.products.push(response)
+  let response = await createCartItem(cartItem)
+
+  if (isError(response) && response.error.join(', ') === 'CartItem exists, try updating instead.') {
+    const cartItem = auth.cart.products.find((item) => item.product.id === localProduct.value.id)
+
+    if (cartItem)
+      response = await updateCartItem(cartItem.id || '', {
+        ...cartItem,
+        quantity: cartItem.quantity + itemQuantity.value,
+      })
+    if (isError(response)) {
+      error.value = response.error.join(', ')
+      return
+    }
+
+    auth.cart.products = auth.cart.products.map((item) =>
+      item.id === (response as CartItem).id ? (response as CartItem) : item,
+    )
+  } else if (!isError(response)) auth.cart.products.push(response)
+  else {
+    error.value = response.error.join(', ')
+    return
+  }
+
+  savedItem = response
   auth.cart.totalAmount += response.product.price * response.quantity
   closeModal()
 }
 
+const router = useRouter()
 async function checkOutItem() {
-  // checkout product here
+  const checkoutStore = useCheckoutStore()
+
+  await addToCart()
+  if (savedItem) checkoutStore.setItems([{ ...savedItem, quantity: itemQuantity.value }])
+  if (!savedItem) {
+    const item = auth.cart.products.find((i) => i.product.id === localProduct.value.id)
+    if (item) checkoutStore.setItems([{ ...item, quantity: itemQuantity.value }])
+  }
+  closeModal()
+
+  router.push({ name: 'Checkout' })
+}
+
+function showDeleteModal() {
+  const modal = document.getElementById('modal--delete-' + product.id)
+  if (modal) {
+    const modalInstance = new Modal(modal)
+    closeModal()
+    modalInstance.show()
+  }
+}
+
+async function removeProduct() {
+  await deleteProduct(product.id)
+
+  const deleteModal = document.getElementById('modal--delete-' + product.id)
+  if (deleteModal) {
+    const modalInstance = Modal.getInstance(deleteModal)
+    modalInstance?.hide()
+  }
+
+  const productModal = document.getElementById('modal--product-' + product.id)
+  if (productModal) {
+    const modalInstance = Modal.getInstance(productModal)
+    modalInstance?.show()
+  }
+
+  localProduct.value.isDeleted = true
+  isEditable.value = false
 }
 </script>
 
@@ -81,7 +149,10 @@ async function checkOutItem() {
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header border-bottom-0 p-4 pb-2">
-          <h1 class="modal-title fs-5">Product Details</h1>
+          <h1 class="modal-title fs-5 me-2">Product Details</h1>
+          <button v-if="isEditable" class="btn text-danger" @click="showDeleteModal">
+            <TrashIcon style="height: 1.5rem; width: 1.5rem" />
+          </button>
           <button
             type="button"
             class="btn-close"
@@ -91,6 +162,21 @@ async function checkOutItem() {
         </div>
 
         <form class="modal-body p-4" @submit.prevent="editProduct">
+          <span
+            v-if="localProduct.quantity <= 0"
+            class="badge rounded-pill fs-6 px-3"
+            style="background-color: var(--bs-yellow)"
+          >
+            Soldout
+          </span>
+          <span
+            v-if="localProduct.isDeleted"
+            class="badge rounded-pill fs-6 px-3"
+            style="background-color: var(--bs-danger)"
+          >
+            Deleted
+          </span>
+
           <div class="my-3">
             <label for="name" class="form-label">
               Product Name
@@ -140,47 +226,52 @@ async function checkOutItem() {
             </div>
 
             <div class="text-start flex-fill">
-              <label for="name" class="form-label">
+              <label for="product--quantity" class="form-label">
                 Quantity
-                <span class="text-danger" :hidden="!isEditable">*</span>
+                <span class="text-danger">*</span>
               </label>
               <div class="input-group">
                 <button
                   type="button"
                   class="btn btn-outline-primary px-3"
                   @click="changeQuantity(-1)"
+                  :disabled="localProduct.quantity < 1 && !isEditable || localProduct.isDeleted"
                 >
                   -
                 </button>
+
                 <input
+                  id="product--quantity"
                   type="number"
                   class="form-control flex-fill text-center"
-                  :class="{ 'text-danger': localProduct.quantity < 1 }"
-                  id="name"
-                  min="1"
+                  :class="{ 'text-danger': localProduct.quantity < 0 }"
+                  min="0"
                   v-model="localProduct.quantity"
                   required
                   style="max-width: 5rem"
                   :hidden="!isEditable"
                 />
+
                 <input
+                  id="add-to-cart--quantity"
                   type="number"
                   class="form-control flex-fill text-center"
                   :class="{
-                    'text-danger': itemQuantity < 1 || itemQuantity > localProduct.quantity,
+                    'text-danger': itemQuantity < 0 || itemQuantity > localProduct.quantity,
                   }"
-                  id="quantity"
-                  min="1"
+                  min="0"
                   :max="localProduct.quantity"
                   v-model="itemQuantity"
                   style="max-width: 5rem"
                   :hidden="isEditable"
+                  :disabled="localProduct.quantity === 0 || localProduct.isDeleted"
                 />
 
                 <button
                   type="button"
                   class="btn btn-outline-primary px-3"
                   @click="changeQuantity(1)"
+                  :disabled="localProduct.quantity <= 0 && !isEditable || localProduct.isDeleted"
                 >
                   +
                 </button>
@@ -192,9 +283,21 @@ async function checkOutItem() {
             {{ error }}
           </div>
 
-          <div class="mt-5 d-flex gap-3 justify-content-end" :hidden="isEditable">
-            <button type="button" class="btn text-primary" @click="addToCart">Add To Cart</button>
-            <button type="button" class="btn btn-primary px-5" @click="checkOutItem">
+          <div class="mt-5 d-flex gap-3 justify-content-end" :class="{ 'd-none': isEditable }">
+            <button
+              type="button"
+              class="btn text-primary border-0"
+              @click="addToCart"
+              :disabled="itemQuantity <= 0"
+            >
+              Add To Cart
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary px-5"
+              @click="checkOutItem"
+              :disabled="itemQuantity <= 0"
+            >
               Buy Now
             </button>
           </div>
@@ -220,6 +323,7 @@ async function checkOutItem() {
       </div>
     </div>
   </div>
+  <DeleteModal :id="product.id" @delete="removeProduct" />
 </template>
 
 <style scoped>
