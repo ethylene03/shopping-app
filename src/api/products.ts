@@ -17,9 +17,13 @@ async function createProduct(product: Product): Promise<Product | ApiError> {
   }
 }
 
-async function getProducts(role: 'BUYER' | 'SELLER'): Promise<Page | ApiError> {
+async function getProducts(
+  role: 'BUYER' | 'SELLER',
+  query?: Record<string, string>,
+  signal?: AbortSignal,
+): Promise<Page | ApiError> {
   try {
-    const response = await fetchApi(GET('/products', { role }))
+    const response = await fetchApi(GET('/products', { ...query, role }, signal))
     const data = await response.json()
 
     if (!response.ok) return { error: data.error } as ApiError

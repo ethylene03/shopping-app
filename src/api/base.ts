@@ -6,7 +6,7 @@ import type { Order, OrderItem } from '@/models/orders'
 import type { Cart, CartItem } from '@/models/carts'
 
 const baseUrl = import.meta.env.VITE_API_URL
-type DataType = User | Product | Order | OrderItem | Cart | CartItem | { status: string }
+type DataType = User | Product | Order | OrderItem | Cart | CartItem | { status: string } | null
 
 function getHeaders() {
   const auth = useAuthorizationStore()
@@ -17,11 +17,12 @@ function getHeaders() {
   })
 }
 
-function GET(url: string, query: Record<string, string> | null = null) {
+function GET(url: string, query: Record<string, string> | null = null, signal?: AbortSignal) {
   const params = query ? new URLSearchParams(query).toString() : null
   return new Request(baseUrl + url + (params ? '?' + params : ''), {
     method: 'GET',
     headers: getHeaders(),
+    signal,
   })
 }
 
