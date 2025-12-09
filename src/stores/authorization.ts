@@ -1,5 +1,4 @@
 import type { Cart } from '@/models/carts'
-import type { Order } from '@/models/orders'
 import type { User, UserToken } from '@/models/users'
 import { defineStore } from 'pinia'
 
@@ -11,7 +10,6 @@ export const useAuthorizationStore = defineStore('authorization', {
     name: '',
     username: '',
     cart: {} as Cart,
-    orders: [] as Order[],
   }),
 
   actions: {
@@ -25,10 +23,18 @@ export const useAuthorizationStore = defineStore('authorization', {
       this.username = response.username
       this.token = response.token
       this.cart = response.cart
-      this.orders = response.orders
     },
     getUserDetails() {
-      return { id: this.id, name: this.name, username: this.username } as User
+      return {
+        id: this.id,
+        name: this.name,
+        username: this.username,
+        role: this.role,
+        cart: this.cart,
+      } as User
+    },
+    removeCartItem(id: string) {
+      this.cart.products = this.cart.products?.filter((item) => item.id !== id) || []
     },
   },
 })
