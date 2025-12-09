@@ -3,13 +3,19 @@ import type { Product } from '@/models/products'
 import { Modal } from 'bootstrap'
 import ViewProduct from './ViewProduct.vue'
 import { ref } from 'vue'
-import { formatAmount } from '@/helpers/utils'
+import { formatAmount, isError } from '@/helpers/utils'
+import { CheckIcon, PlusIcon, ShoppingCartIcon } from '@heroicons/vue/24/solid'
+import { useAuthorizationStore } from '@/stores/authorization'
+import type { CartItem } from '@/models/carts'
+import { createCartItem, updateCartItem } from '@/api/carts'
+import { useRouter } from 'vue-router'
+import { useCheckoutStore } from '@/stores/checkout'
 
 const { product, isEditable } = defineProps<{ product: Product; isEditable: boolean }>()
 const localProduct = ref<Product>(product)
 
 function showProductDetails() {
-  if(localProduct.value.isDeleted) return
+  if (localProduct.value.isDeleted) return
   const modal = document.getElementById('modal--product-' + product.id)
   if (modal) {
     const modalInstance = new Modal(modal)
@@ -19,6 +25,56 @@ function showProductDetails() {
 
 function updateProduct(newProduct: Product) {
   localProduct.value = newProduct
+}
+
+const auth = useAuthorizationStore()
+const isAddedToCart = ref(false)
+async function addToCart() {
+  const cartItem: CartItem = {
+    cartId: auth.cart.id,
+    product: localProduct.value,
+    quantity: 1,
+  }
+
+  let response = await createCartItem(cartItem)
+
+  if (isError(response) && response.error.join(', ') === 'CartItem exists, try updating instead.') {
+    const cartItem = auth.cart.products.find((item) => item.product.id === localProduct.value.id)
+
+    if (cartItem)
+      response = await updateCartItem(cartItem.id || '', {
+        ...cartItem,
+        quantity: cartItem.quantity + 1,
+      })
+    if (isError(response)) return
+
+    auth.cart.products = auth.cart.products.map((item) =>
+      item.id === (response as CartItem).id ? (response as CartItem) : item,
+    )
+  } else if (!isError(response)) auth.cart.products.push(response)
+  else return
+
+  savedItem = response
+  auth.cart.totalAmount += response.product.price * response.quantity
+  isAddedToCart.value = true
+  setTimeout(() => {
+    isAddedToCart.value = false
+  }, 2000)
+}
+
+const router = useRouter()
+let savedItem: CartItem | null = null
+async function checkOutItem() {
+  const checkoutStore = useCheckoutStore()
+
+  await addToCart()
+  if (savedItem) checkoutStore.setItems([{ ...savedItem, quantity: 1 }])
+  if (!savedItem) {
+    const item = auth.cart.products.find((i) => i.product.id === localProduct.value.id)
+    if (item) checkoutStore.setItems([{ ...item, quantity: 1 }])
+  }
+
+  router.push({ name: 'Checkout' })
 }
 </script>
 
@@ -41,10 +97,28 @@ function updateProduct(newProduct: Product) {
       <p class="card-text text-truncate text-muted">
         {{ localProduct.description || 'No description provided.' }}
       </p>
-      <p v-if="localProduct.quantity > 0" class="card-text text-muted mb-0">
-        Quantity: {{ localProduct.quantity }}
-      </p>
+      <p class="card-text text-muted mb-0">Quantity: {{ localProduct.quantity }}</p>
       <p class="card-text mb-0 fs-5 text-primary">{{ formatAmount(localProduct.price) }}</p>
+
+      <div v-if="!isEditable" class="d-flex justify-content-between gap-3 mt-4">
+        <button
+          class="btn border-0"
+          :class="{ 'text-primary': !isAddedToCart, 'text-success': isAddedToCart }"
+          @click.stop="addToCart"
+          :hidden="localProduct.quantity < 1 || localProduct.isDeleted"
+        >
+          <ShoppingCartIcon style="height: 1.5rem; width: 1.5rem" />
+          <PlusIcon v-if="!isAddedToCart" style="height: 1rem; width: 1rem" />
+          <CheckIcon v-else style="height: 1rem; width: 1rem" />
+        </button>
+        <button
+          class="btn btn-primary flex-fill"
+          @click.stop="checkOutItem"
+          :hidden="localProduct.quantity < 1 || localProduct.isDeleted"
+        >
+          Buy Now
+        </button>
+      </div>
     </div>
 
     <span v-if="localProduct.quantity < 1" class="sold-out-badge"> Soldout </span>
@@ -63,7 +137,8 @@ function updateProduct(newProduct: Product) {
   background-color: var(--bs-light);
 }
 
-.deleted-badge, .sold-out-badge {
+.deleted-badge,
+.sold-out-badge {
   position: absolute;
   top: 30%;
   left: 50%;
