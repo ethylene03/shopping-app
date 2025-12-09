@@ -1,5 +1,4 @@
 import type { Cart } from './carts'
-import type { Order } from './orders'
 
 export interface UserToken {
   id: string
@@ -8,7 +7,6 @@ export interface UserToken {
   role: 'BUYER' | 'SELLER'
   token: string
   cart: Cart
-  orders: Order[]
 }
 
 export type User = Omit<UserToken, 'token'>
