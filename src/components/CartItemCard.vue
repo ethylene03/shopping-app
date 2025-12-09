@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { updateCartItem } from '@/api/carts'
+import { deleteCartItem, updateCartItem } from '@/api/carts'
 import { debounce, formatAmount, isError } from '@/helpers/utils'
 import type { CartItem } from '@/models/carts'
 import { onMounted, ref, watch } from 'vue'
@@ -10,14 +10,27 @@ const { cartItem, selectAll } = defineProps<{
 }>()
 const localItem = ref(cartItem)
 const debouncedFetch = ref<(() => void) | null>(null)
+const selectInput = ref(cartItem.isSelected)
 
 onMounted(() => {
   debouncedFetch.value = debounce(handleSubmit, 500)
 })
 
+const emit = defineEmits<{
+  (e: 'update', item: CartItem): void
+  (e: 'selected'): void
+}>()
+
 async function handleSubmit() {
+  if (localItem.value.quantity < 1) {
+    await deleteCartItem(localItem.value.id || '')
+    emit('update', localItem.value)
+    return
+  }
+
   const response = await updateCartItem(localItem.value.id || '', localItem.value)
   if (isError(response)) return
+  emit('update', response)
 }
 
 watch(
@@ -32,14 +45,21 @@ watch(
 watch(
   () => selectAll,
   () => {
-    localItem.value.isSelected = selectAll
+    selectInput.value = selectAll
+  },
+)
+
+watch(
+  () => selectInput.value,
+  () => {
+    emit('selected')
   },
 )
 </script>
 
 <template>
   <div class="card p-3 d-flex flex-row align-items-center gap-3 shadow-sm">
-    <input type="checkbox" class="border-dark big-checkbox" v-model="localItem.isSelected" />
+    <input type="checkbox" class="border-dark big-checkbox" v-model="selectInput" />
 
     <div class="w-100 row gap-2 gap-md-0">
       <h5 class="mb-0 col-12 col-md-3">{{ localItem.product.name }}</h5>
@@ -55,23 +75,30 @@ watch(
             type="button"
             class="btn border-secondary-subtle px-3 py-0"
             @click="localItem.quantity -= 1"
+            :disabled="localItem.quantity <= 1"
           >
             -
           </button>
           <input
             type="number"
             class="form-control flex-fill text-center p-0"
-            :class="{ 'text-danger': localItem.quantity < 1 }"
+            :class="{
+              'text-danger':
+                localItem.quantity < 1 || localItem.quantity > localItem.product.quantity,
+            }"
             id="name"
             min="1"
+            :max="localItem.product.quantity"
             v-model="localItem.quantity"
             required
             style="max-width: 4rem"
+            :disabled="localItem.quantity >= localItem.product.quantity || localItem.quantity <= 1"
           />
           <button
             type="button"
             class="btn border-secondary-subtle px-3 py-0"
             @click="localItem.quantity += 1"
+            :disabled="localItem.quantity >= localItem.product.quantity"
           >
             +
           </button>
